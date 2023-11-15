@@ -4,14 +4,33 @@ import {
   StyleSheet,
   View,
   TouchableOpacity,
-  Button,
+  Image,
 } from 'react-native';
 import { Camera, CameraType } from 'expo-camera';
 import { useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
+import { NativeBaseProvider, Button } from 'native-base';
 
 export default function App() {
   const [type, setType] = useState(CameraType.back);
   const [permission, requestPermission] = Camera.useCameraPermissions();
+  const [image, setImage] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    console.log(result);
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
 
   if (!permission) {
     return <View />;
@@ -35,15 +54,43 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Camera style={styles.camera} type={type}>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={toggleCameraType}>
-            <Text style={styles.text}>Flip Camera</Text>
-          </TouchableOpacity>
-        </View>
-      </Camera>
-    </SafeAreaView>
+    <NativeBaseProvider>
+      <SafeAreaView style={styles.container}>
+        {showCamera ? (
+          <Camera style={styles.camera} type={type}>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={toggleCameraType}
+              >
+                <Text style={styles.text}>Flip Camera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => setShowCamera(false)}
+              >
+                <Text style={styles.text}>Exit Camera</Text>
+              </TouchableOpacity>
+            </View>
+          </Camera>
+        ) : (
+          <View
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Button onPress={() => setShowCamera(true)}>Access Camera</Button>
+            <Button title="Pick an image from camera roll" onPress={pickImage}>
+              Open Photo Library
+            </Button>
+            {image && (
+              <Image
+                source={{ uri: image }}
+                style={{ width: 200, height: 200 }}
+              />
+            )}
+          </View>
+        )}
+      </SafeAreaView>
+    </NativeBaseProvider>
   );
 }
 
